@@ -1,0 +1,173 @@
+﻿@page "/Admin/EmailTemplates"
+@inject HttpClient Http
+@attribute [Authorize]
+
+<h3>Admin</h3>
+
+<AdminNavMenu />
+
+<div class="max-width-960">
+    @if (emailTemplates == null)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="search-container">
+                <input type="search" @bind-value="searchTerm" @bind-value:event="oninput" class="form-control form-control-sm search" placeholder="Search..." />
+                <div class="svg-container text-muted">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
+            </div>
+            <a class="btn btn-primary btn-sm" @onclick="() => OpenCreateDialog()">Create</a>
+        </div>
+
+        <ul class="list-unstyled custom-list mt-2">
+            @foreach (var emailTemplate in GetFilteredEmailTemplates() ?? Enumerable.Empty<Template>())
+            {
+                <li @onclick="(() => OpenEditDialog(emailTemplate))" @onclick:stopPropagation>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>
+                            @emailTemplate.Name
+                        </span>
+                        <div class="actions">
+                            <button class="me-2" @onclick="(() => OpenEditDialog(emailTemplate))" @onclick:stopPropagation>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                            </button>
+                            <button @onclick="(() => OpenDeleteDialog(emailTemplate))" @onclick:stopPropagation>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+<ModalTemplate @bind-IsVisible="ShowCreateDialog" Title="@(model.Id == 0 ? "Create" : "Edit")">
+    <EditForm Model="model" class="row g-2" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="col-12 mt-0">
+            <label for="name" class="form-label">Name</label>
+            <InputText id="name" @bind-Value="model.Name" class="form-control" />
+            <ValidationMessage For="() => model.Name" />
+        </div>
+        <div class="col-12">
+            <label for="body" class="form-label">Body</label>
+            <InputTextArea id="body" @bind-Value="model.Body" class="form-control" rows="8" />
+            <ValidationMessage For="() => model.Body" />
+        </div>
+        <div class="col-7">
+            <span class="fs-14 fw-500">Placeholders:</span><br />
+            <span class="fs-14">{candidate_name}</span>
+            <span class="fs-14">{candidate_first_name}</span>
+            <span class="fs-14">{candidate_last_name}</span>
+            <span class="fs-14">{job_title}</span>
+            <span class="fs-14">{user}</span>
+        </div>
+        <div class="col-5 footer">
+            <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal" @onclick="() => ShowCreateDialog = false">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm" disabled="@IsDisabled">@(model.Id == 0 ? "Create" : "Update")</button>
+        </div>
+    </EditForm>
+</ModalTemplate>
+
+<ConfirmDialog Title="Delete"
+               Text="Are you sure you want to delete this template?"
+               OnClose="OnDeleteDialogClose"
+               @bind-IsVisible="ShowDeleteDialog" />
+
+@code {
+    private List<Template>? emailTemplates;
+    private Template? selectedTemplate;
+    private Template model = new();
+
+    private bool ShowCreateDialog = false;
+    private bool ShowDeleteDialog = false;
+    private bool IsDisabled = false;
+
+    private string searchTerm = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        emailTemplates = await Http.GetFromJsonAsync<List<Template>>("api/Templates/EmailTemplates");
+    }
+
+    private void OpenDeleteDialog(Template template)
+    {
+        ShowDeleteDialog = true;
+        selectedTemplate = template;
+        StateHasChanged();
+    }
+
+    private async Task OnDeleteDialogClose(bool confirmed)
+    {
+        if (confirmed && selectedTemplate != null)
+        {
+            var response = await Http.DeleteAsync($"api/Templates/{selectedTemplate.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                emailTemplates?.Remove(selectedTemplate);
+            }
+        }
+
+        ShowDeleteDialog = false;
+        StateHasChanged();
+    }
+
+    private void OpenCreateDialog()
+    {
+        selectedTemplate = null;
+        model = new()
+            {
+                TemplateType = TemplateType.Email
+            };
+        ShowCreateDialog = true;
+    }
+
+    private void OpenEditDialog(Template template)
+    {
+        selectedTemplate = template;
+        model = new()
+            {
+                Id = template.Id,
+                Name = template.Name,
+                Body = template.Body,
+                TemplateType = TemplateType.Email
+            };
+        ShowCreateDialog = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        IsDisabled = true;
+        var response = model.Id == 0 ?
+            await Http.PostAsJsonAsync<Template>("api/Templates", model) :
+            await Http.PutAsJsonAsync<Template>($"api/Templates/{model.Id}", model);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var newItem = await response.Content.ReadFromJsonAsync<Template>();
+            if (newItem != null)
+            {
+                if (model.Id == 0)
+                    emailTemplates?.Add(newItem);
+                else
+                    emailTemplates?.Replace(selectedTemplate!, newItem);
+            }
+
+            ShowCreateDialog = false;
+        }
+        IsDisabled = false;
+    }
+
+    private List<Template>? GetFilteredEmailTemplates()
+    {
+        return emailTemplates?
+        .Where(t => t.Name!.ToLower().Contains(searchTerm.ToLower().Trim()))
+        .OrderBy(t => t.Name)
+        .ToList();
+    }
+}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Chấm Công</title>
+    <base href="/" />
+    <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="Recruit.Client.styles.css" rel="stylesheet" />
+    <link href="css/ngaycong.css" rel="stylesheet" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="Themes/bower_components/Ionicons/css/ionicons.min.css">
+    <link rel="stylesheet" href="Themes/bower_components/font-awesome/css/font-awesome.min.css">
+
+
+</head>
+<body>
+    <di id="app">
+        <div class="d-flex flex-column justify-content-center align-items-center vh-100" style="background: #3845bf">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden"> Loading...</span>
+            </div>
+        </div>
+
+        <div id="blazor-error-ui">
+            An unhandled error has occurred.
+            <a href="" class="reload"> Reload</a>
+            <a class="dismiss"> 🗙</a>
+        </div>
+        <script src="_framework/blazor.webassembly.js"></script>
+        <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="lib/jquery/jquery.min.js"></script>
+        <script src="lib/jqueryui/jquery-ui.min.js"></script>
+        <script src="setdatatable.js"></script>
+        <!-- <script src="js/index.js" > </script >-->
+        <!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCUTekxGak1ug0G_TBnyKUvmL4ZDlZDF9g&callback=initMap&v=weekly"
+    defer > </script >-->
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <script>
+            function initMap(Latitude = 34.397, Longitude = 150.644) {
+                let mapOptions =
+
+                {
+                    center: [Latitude, Longitude], zoom: 16
+                }
+
+                    ;
+
+
+                let map = new L.map('map', mapOptions);
+
+                let layer = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+                map.addLayer(layer);
+
+                let marker = new L.Marker([Latitude, Longitude]);
+                marker.addTo(map);
+
+                var circle = new L.circle([16.4554869, 107.6108948], {
+                    color: 'red',
+                    fillColor: '#f03',
+                    fillOpacity: 0.5,
+                    radius: 70
+                });
+                circle.addTo(map);
+                circle.bindPopup("location your company");
+            }
+        </script>
+        <script>
+            function getWeek() {
+                var selectedDate = new Date(document.getElementById('selectedDay').value);
+
+                // Tính toán ngày đầu tuần (thứ 2)
+                var dayOfWeek = selectedDate.getDay(); // Ngày trong tuần (0 - Chủ Nhật, 1 - Thứ 2, ..., 6 - Thứ 7)
+                var daysUntilMonday = (dayOfWeek === 0) ? 6 : (1 - dayOfWeek); // Số ngày cần đến thứ 2 nếu ngày đã chọn là Chủ Nhật
+                var startDay = new Date(selectedDate);
+                startDay.setDate(selectedDate.getDate() + daysUntilMonday);
+
+                // Tính toán ngày cuối tuần (Chủ Nhật)
+                var endDay = new Date(startDay);
+                endDay.setDate(startDay.getDate() + 6);
+
+                // Định dạng ngày thành chuỗi dd-mm-yyyy
+                var startDayFormatted = formatDate(startDay);
+                var endDayFormatted = formatDate(endDay);
+
+                // Hiển thị kết quả
+                var weekNumber = getWeekNumber(selectedDate);
+                document.getElementById('weekDisplay').innerHTML = "Tuần thứ " + weekNumber + " từ " + startDayFormatted + " đến " + endDayFormatted;
+            }
+
+            function formatDate(date) {
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+                return (day < 10 ? '0' : '') + day + '/' + (month < 10 ? '0' : '') + month + '/' + year;
+            }
+
+            function getWeekNumber(date) {
+                var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+                d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+                var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                var weekNumber = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+                return weekNumber;
+            }
+        </script>
+</body>
+
+</html>

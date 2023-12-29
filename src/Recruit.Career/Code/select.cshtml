@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Lấy tuần từ ngày được chọn</title>
+</head>
+<body>
+    <input type="date" id="selectedDay" class="form-control w-50" data-date-format="dd-mm-yyyy" />
+    <button onclick="getWeek()">Lấy tuần</button>
+    <div id="weekDisplay"></div>
+
+    <script>
+        function getWeek() {
+            var selectedDate = new Date(document.getElementById('selectedDay').value);
+
+            // Tính toán ngày đầu tuần (thứ 2)
+            var dayOfWeek = selectedDate.getDay(); // Ngày trong tuần (0 - Chủ Nhật, 1 - Thứ 2, ..., 6 - Thứ 7)
+            var daysUntilMonday = (dayOfWeek === 0) ? 6 : (1 - dayOfWeek); // Số ngày cần đến thứ 2 nếu ngày đã chọn là Chủ Nhật
+            var startDay = new Date(selectedDate);
+            startDay.setDate(selectedDate.getDate() + daysUntilMonday);
+
+            // Tính toán ngày cuối tuần (Chủ Nhật)
+            var endDay = new Date(startDay);
+            endDay.setDate(startDay.getDate() + 6);
+
+            // Định dạng ngày thành chuỗi dd-mm-yyyy
+            var startDayFormatted = formatDate(startDay);
+            var endDayFormatted = formatDate(endDay);
+
+            // Hiển thị kết quả
+            var weekNumber = getWeekNumber(selectedDate);
+            document.getElementById('weekDisplay').innerHTML = "Tuần thứ " + weekNumber + " từ " + startDayFormatted + " đến " + endDayFormatted;
+        }
+
+        function formatDate(date) {
+            var day = date.getDate();
+            var month = date.getMonth() + 1;
+            var year = date.getFullYear();
+            return (day < 10 ? '0' : '') + day + '/' + (month < 10 ? '0' : '') + month + '/' + year;
+        }
+
+        function getWeekNumber(date) {
+            var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            var weekNumber = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+            return weekNumber;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+﻿@inject HttpClient Http
+@implements IDisposable
+@using System.Timers
+
+<div class="search-result-container">
+    <input type="search" class="search-input" placeholder="Search..." @bind-value="SearchTerm" @bind-value:event="oninput" @onfocusin="ShowResults" />
+    <div class="svg-container">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    </div>
+    <div class="box-shadow @SearchResultCss">
+        <div class="search-result-content">
+            @if (result?.Applicants.Count() > 0)
+            {
+                <h6>Applicants</h6>
+                <ul class="list-unstyled mb-3">
+                    @foreach (var applicant in result.Applicants)
+                    {
+                        <li class="mt-2">
+                            <a class="d-flex align-items-center" role="button" @onclick="@(() => ShowDetails(applicant))">
+                                @if (!string.IsNullOrEmpty(applicant.ProfilePhoto))
+                                {
+                                    <img src="@applicant.ProfilePhoto" class="avatar me-2" />
+                                }
+                                else
+                                {
+                                    <span class="avatar avatar-green me-2">@applicant.FirstName?.ToUpper()[0]</span>
+                                }
+                                <span class="single-line">@applicant.FirstName @applicant.LastName</span>
+                                <span class="single-line ms-2 text-secondary">applied for @applicant.Job?.Title</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (result?.Jobs.Count() > 0)
+            {
+                <h6>Jobs</h6>
+                <ul class="list-unstyled mb-3">
+                    @foreach (var job in result.Jobs)
+                    {
+                        <li class="mt-2">
+                            <NavLink href="@($"Jobs/{job.Id}")" class="d-flex align-items-center" @onclick="HideResults">
+                                <span class="avatar avatar-rounded avatar-project me-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-briefcase"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                                </span>
+                                <span class="single-line">@job.Title</span>
+                                <span class="single-line ms-2 text-secondary"> in @job.City, @job.Country</span>
+                            </NavLink>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+@if (showSearchResult)
+{
+    <div class="outside-clickable-container" @onclick="() => showSearchResult = false">
+    </div>
+}
+
+<ApplicantDetails @bind-IsVisible="ShowApplicantDetails"
+                  Applicant="CurrentApplicant"
+                  OnClose="HideDetails" />
+
+@code {
+    private SearchResult? result;
+    private bool showSearchResult;
+    private string? SearchResultCss => showSearchResult ? "search-result show" : "search-result";
+
+    private Timer? debounceTimer;
+    private double debounceInterval = 300;
+    private string? _searchTerm;
+    private string? SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            if (value?.Length == 0)
+            {
+                result = null;
+                showSearchResult = false;
+                debounceTimer?.Stop();
+            }
+            else
+            {
+                debounceTimer?.Stop();
+                debounceTimer?.Start();
+            }
+        }
+    }
+
+    private Applicant? CurrentApplicant { get; set; }
+    private bool ShowApplicantDetails = false;
+
+    protected override void OnInitialized()
+    {
+        debounceTimer = new Timer(debounceInterval);
+        debounceTimer.Elapsed += Search;
+        debounceTimer.AutoReset = false;
+    }
+
+    public async void Search(object? sender, ElapsedEventArgs args)
+    {
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+            result = await Http.GetFromJsonAsync<SearchResult?>($"api/Search?searchTerm={SearchTerm}");
+
+        ShowResults();
+    }
+
+    private void ShowResults()
+    {
+        showSearchResult = result?.Applicants.Count() > 0 || result?.Jobs.Count() > 0;
+        StateHasChanged();
+    }
+
+    private void HideResults()
+    {
+        SearchTerm = "";
+        showSearchResult = false;
+        StateHasChanged();
+    }
+
+    public void ShowDetails(Applicant? applicant)
+    {
+        ShowApplicantDetails = true;
+        CurrentApplicant = applicant;
+        HideResults();
+    }
+
+    public void HideDetails()
+    {
+        ShowApplicantDetails = false;
+        CurrentApplicant = null;
+    }
+
+    public void Dispose()
+    {
+        debounceTimer?.Dispose();
+    }
+}

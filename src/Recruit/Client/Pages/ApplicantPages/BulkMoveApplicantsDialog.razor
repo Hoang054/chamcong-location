@@ -1,0 +1,116 @@
+﻿@inject HttpClient Http
+
+<EditForm Model="model" class="row g-3" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="col-12">
+        You have selected <span class="fw-500">@Applicants?.Count</span> applicant@(Applicants?.Count > 1 ? "s" : "")
+    </div>
+    @if (ShowError)
+    {
+        <div class="col-12">
+            <div class="alert alert-danger mb-0 fs-14" role="alert">
+                <span class="fw-500">Error</span> <br />
+                Please make sure you have selected both position and stage
+            </div>
+        </div>
+    }
+    <div class="col-12">
+        <label for="jobId" class="form-label">Position</label>
+        <InputSelect id="jobId" class="form-select"
+                     ValueChanged="((int jobId) => HandleJobChange(jobId))"
+                     ValueExpression="(() => model.JobId)"
+                     Value="model.JobId"
+                     disabled="@IsDisabled">
+            <option value="0">Select position</option>
+            @foreach (var job in Jobs ?? Enumerable.Empty<Job>())
+            {
+                <option value="@job.Id">@job.Title</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => model.JobId" />
+    </div>
+    <div class="col-12">
+        <label for="stageId" class="form-label">Initial Stage</label>
+        <InputSelect id="stageId" @bind-Value="model.StageId" class="form-select" disabled="@IsDisabled">
+            @if (Stages?.Count > 0)
+            {
+                <option value="0">Select stage</option>
+                @foreach (var stage in Stages)
+                {
+                    <option value="@stage.Id">@stage.Name</option>
+                }
+            }
+        </InputSelect>
+        <ValidationMessage For="() => model.StageId" />
+    </div>
+    <div class="col-12 footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal" @onclick="OnCancel">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm" disabled="@IsDisabled">Move</button>
+    </div>
+</EditForm>
+
+
+@code {
+    private BulkMoveApplicantViewModel model = new();
+
+    public List<Job>? Jobs = new();
+    public List<Stage>? Stages = new();
+
+    [Parameter]
+    public List<Applicant>? Applicants { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<List<Applicant>> OnValidSubmit { get; set; }
+
+    private bool IsDisabled = false;
+    private bool ShowError = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Applicants?.Count > 0)
+        {
+            model = new();
+            Stages?.Clear();
+            Jobs = await Http.GetFromJsonAsync<List<Job>>("api/Jobs");
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        ShowError = false;
+        IsDisabled = true;
+
+        if (Applicants?.Count > 0)
+        {
+            model.Applicants = Applicants.Select(a => a.Id).ToList();
+            var response = await Http.PostAsJsonAsync<BulkMoveApplicantViewModel>($"api/BulkActions/MoveApplicantsToJob", model);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var updatedApplicants = await response.Content.ReadFromJsonAsync<List<Applicant>>();
+                await OnValidSubmit.InvokeAsync(updatedApplicants);
+            }
+            else
+            {
+                ShowError = true;
+            }
+        }
+
+        IsDisabled = false;
+    }
+
+    private async Task HandleJobChange(int jobId)
+    {
+        ShowError = false;
+
+        Stages?.Clear();
+        model.JobId = jobId;
+        if (jobId > 0)
+        {
+            Stages = await Http.GetFromJsonAsync<List<Stage>>($"api/Stages/{jobId}");
+        }
+    }
+}

@@ -1,0 +1,143 @@
+﻿@inject HttpClient Http
+
+<EditForm Model="model" class="row g-3" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="col-12">
+        <div class="d-flex align-items-center">
+            @if (!string.IsNullOrEmpty(Applicant?.ProfilePhoto))
+            {
+                <img src="@Applicant?.ProfilePhoto" class="avatar me-2" />
+            }
+            else
+            {
+                <span class="avatar avatar-green me-2">@Applicant?.FirstName?.ToUpper()[0]</span>
+            }
+            <div class="d-flex flex-column" style="line-height: 1.3">
+                <span class="name fw-500">
+                    @Applicant?.FirstName @Applicant?.LastName
+                </span>
+                @if (string.IsNullOrEmpty(Applicant?.Headline))
+                {
+                    <span class="fs-14">Applied for @Applicant?.Job?.Title</span>
+                }
+                else
+                {
+                    <span class="fs-14">@Applicant?.Headline / applied for @Applicant?.Job?.Title</span>
+                }
+            </div>
+        </div>
+    </div>
+    @if (ShowError)
+    {
+        <div class="col-12">
+            <div class="alert alert-danger mb-0 fs-14" role="alert">
+                <span class="fw-500">Error</span> <br />
+                Please make sure you have selected both position and stage and there is no other applicant with the same email in target job.
+            </div>
+        </div>
+    }
+    <div class="col-12">
+        <label for="jobId" class="form-label">Position</label>
+        <InputSelect id="jobId" class="form-select"
+                     ValueChanged="((int jobId) => HandleJobChange(jobId))"
+                     ValueExpression="(() => model.JobId)"
+                     Value="model.JobId"
+                     disabled="@IsDisabled">
+            <option value="0">Select position</option>
+            @foreach (var job in Jobs ?? Enumerable.Empty<Job>())
+            {
+                <option value="@job.Id">@job.Title</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => model.JobId" />
+    </div>
+    <div class="col-12">
+        <label for="stageId" class="form-label">Initial Stage</label>
+        <InputSelect id="stageId" @bind-Value="model.StageId" class="form-select" disabled="@IsDisabled">
+            @if (Stages?.Count > 0)
+            {
+                <option value="0">Select stage</option>
+                @foreach (var stage in Stages)
+                {
+                    <option value="@stage.Id">@stage.Name</option>
+                }
+            }
+        </InputSelect>
+        <ValidationMessage For="() => model.StageId" />
+    </div>
+    <div class="col-12 footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal" @onclick="OnCancel">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm" disabled="@IsDisabled">Move</button>
+    </div>
+</EditForm>
+
+
+@code {
+    private MoveApplicantViewModel model = new();
+
+    public List<Job>? Jobs = new();
+    public List<Stage>? Stages = new();
+
+    [Parameter]
+    public Applicant? Applicant { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<Applicant> OnValidSubmit { get; set; }
+
+    private bool IsDisabled = false;
+    private bool ShowError = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Applicant != null)
+        {
+            model = new();
+            model.ApplicantId = Applicant.Id;
+            Stages?.Clear();
+            Jobs = await Http.GetFromJsonAsync<List<Job>>("api/Jobs");
+
+            // Exclude current job from list
+            Jobs = Jobs?.Where(j => j.Id != Applicant.JobId).ToList();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        ShowError = false;
+        IsDisabled = true;
+
+        if (Applicant != null)
+        {
+            model.ApplicantId = Applicant.Id;
+
+            var response = await Http.PostAsJsonAsync<MoveApplicantViewModel>($"api/Applicants/Move", model);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var updatedApplicant = await response.Content.ReadFromJsonAsync<Applicant>();
+                await OnValidSubmit.InvokeAsync(updatedApplicant);
+            }
+            else
+            {
+                ShowError = true;
+            }
+        }
+
+        IsDisabled = false;
+    }
+
+    private async Task HandleJobChange(int jobId)
+    {
+        ShowError = false;
+
+        Stages?.Clear();
+        model.JobId = jobId;
+        if (jobId > 0)
+        {
+            Stages = await Http.GetFromJsonAsync<List<Stage>>($"api/Stages/{jobId}");
+        }
+    }
+}

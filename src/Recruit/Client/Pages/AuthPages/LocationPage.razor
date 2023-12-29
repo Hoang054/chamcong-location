@@ -1,0 +1,43 @@
+﻿@layout MainLayout
+@page "/LocationPage/{MaNV}/{Ngay}/{Thang}/{Nam}"
+@*@using Blazored.LocalStorage;
+@using Recruit.Server.Models;
+@using Recruit.Server.Models.ModelView;*@
+@inject ITinhCongService TinhCongService
+@inject IJSRuntime JS
+@*@inject ILocalStorageService LocalStorage*@
+<h3>Location Map</h3>
+<p>@MaNV - ngày: @Ngay/@Thang/@Nam</p>
+<div id="map"></div>
+@*<div id="esri-map-container"></div>*@
+@code {
+    //protected override async void OnInitialized()
+    //{
+    //    try
+    //    {
+    //        await JS.InvokeVoidAsync("initMap", null);
+
+    //        StateHasChanged();
+    //    }
+    //    catch(Exception e)
+    //    {
+            
+    //    }
+    //}
+    [Parameter]
+    public string? MaNV { get; set; }
+    [Parameter]
+    public string? Ngay { get; set; }
+    [Parameter]
+    public string? Thang { get; set; }
+    [Parameter]
+    public string? Nam { get; set; }
+    //protected override async Task OnAfterRenderAsync(bool firstRender)
+    //{
+    //    var ngayCong = await TinhCongService.getNgayCong(MaNV, Ngay, Thang, Nam);
+    //    if(firstRender)
+    //    {
+    //        await JS.InvokeVoidAsync("initMap", ngayCong.Latitude, ngayCong.Longitude);
+    //    }
+    //}
+}

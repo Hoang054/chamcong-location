@@ -1,0 +1,66 @@
+﻿
+.table_ngaycong {
+    max-height: 515px;
+    overflow: auto;
+    display: inline-block;
+}
+
+.sticky-col {
+    /*outline: 1px solid #ccc;
+        padding: 0.25em 0.5em 0.25em 1em;
+        text-indent: -0.5em;*/
+    position: sticky;
+    background-color: #fff;
+    left: 0;
+    /*z-index:50;*/
+}
+
+.fixed-header {
+    z-index: 50;
+}
+
+.first-col {
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+    left: 0px;
+}
+
+.second-col {
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+    left: 100px;
+}
+
+table th, td {
+    outline: 1px solid #ccc;
+    padding: 0.25em 0.5em 0.25em 1em;
+    text-indent: -0.5em;
+}
+
+th {
+    top: 0;
+    position: sticky;
+    background-color: #fff;
+}
+
+.mormal-col {
+    width: 175px;
+    min-width: 175px;
+    max-width: 175px;
+}
+
+.table-color {
+    background-color: #f6f6f6;
+    color: #000;
+    text-align: center;
+}
+input.search-input {
+    width: 205px;
+}
+.a-btn-btn-success-mormal-col {
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
+}

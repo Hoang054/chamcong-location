@@ -1,0 +1,38 @@
+﻿@page "/QRSCan"
+@using System.Drawing;
+@layout EmptyLayout
+@inject IQRScanService QRScanService
+@*@inject IAuthService AuthService*@
+@inject NavigationManager NavigationManager
+
+<div class="row justify-content-center auth-wrapper">
+    <div class="col-12 col-md-5 col-lg-4 bg-white box-shadow p-25">
+        <div class="text-center">
+            <h1 class="fw-400">Chấm Công</h1>
+            <p class="text-muted mb-0">Quét QRCode:</p>
+
+            <img src="@a" style="width:200px; height:200px;" />
+        </div>
+        <a href="@b">SelectStatus</a>
+    </div>
+</div>
+
+@code {
+    private string a = "";
+    private string b = "";
+
+    protected override async void OnInitialized()
+    {
+        try
+        {
+            string url = NavigationManager.Uri;
+            b = url.ToLower().Replace("/qrscan", "/SelectStatus");
+            a = await QRScanService.createQRCode();
+            StateHasChanged();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+}

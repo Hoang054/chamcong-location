@@ -1,0 +1,138 @@
+﻿@page "/Jobs/Create"
+@using Recruit.Shared.Extensions
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@attribute [Authorize]
+
+<h3 class="max-width-960 mx-auto">Create a new Job</h3>
+
+@if (model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="@model" OnValidSubmit="@HandleSubmit" class="row g-3 mb-3 max-width-960 mx-auto">
+        <DataAnnotationsValidator />
+        <div class="col-12">
+            <ValidationSummary />
+        </div>
+
+        <div class="col-12">
+            <label for="title" class="form-label d-block">Title</label>
+            <InputText id="title" @bind-Value="model.Title" class="form-control" />
+        </div>
+        <div class="col-12">
+            <label for="description" class="form-label">Description</label>
+            <InputTextArea id="description" @bind-Value="model.Description" class="form-control"></InputTextArea>
+        </div>
+        <div class="col-md-6">
+            <label for="country" class="form-label">Country</label>
+            <InputText id="country" @bind-Value="model.Country" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label for="city" class="form-label">City</label>
+            <InputText id="city" @bind-Value="model.City" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label for="email" class="form-label">Contact Email</label>
+            <InputText id="email" @bind-Value="model.ContactEmail" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label for="phone" class="form-label">Contact Phone</label>
+            <InputText id="phone" @bind-Value="model.ContactPhone" class="form-control" />
+        </div>
+        <div class="col-6">
+            <label for="department" class="form-label">Department</label>
+            <InputSelect id="departmentId" @bind-Value="model.DepartmentId" class="form-select" disabled="@IsLoadingDepartments">
+                <option value=""></option>
+                @foreach (var department in departments ?? Enumerable.Empty<Department>())
+                {
+                    <option value="@department.Id">@department.Name</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-6">
+            <label for="manager" class="form-label">Hiring Manager</label>
+            <InputText id="manager" @bind-Value="model.Manager" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label for="jobType" class="form-label">Job Type</label>
+            <InputSelect id="jobType" @bind-Value="model.JobType" class="form-select">
+                @foreach (Enum item in Enum.GetValues(typeof(JobType)))
+                {
+                    <option value="@item.ToString()">@item.GetDisplayName()</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-6">
+            <label for="jobExperience" class="form-label">Experience</label>
+            <InputSelect id="jobExperience" @bind-Value="model.JobExperience" class="form-select">
+                @foreach (Enum item in Enum.GetValues(typeof(JobExperience)))
+                {
+                    <option value="@item.ToString()">@item.GetDisplayName()</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-12">
+            <label for="skills" class="form-label">Skills</label>
+            <InputText id="skills" @bind-Value="model.RequiredSkills" class="form-control" />
+            <div id="skills" class="form-text">Comma-seperated required job skills.</div>
+        </div>
+        <div class="col-12">
+            <label for="expires" class="form-label">Expires</label>
+            <InputDate id="expires" @bind-Value="model.Expires" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label for="salaryFrom" class="form-label">Min Salary</label>
+            <InputNumber id="salaryFrom" @bind-Value="model.SalaryFrom" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label for="salaryTo" class="form-label">Max Salary</label>
+            <InputNumber id="salaryTo" @bind-Value="model.SalaryTo" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <div class="form-check">
+                <InputCheckbox id="published" @bind-Value="model.Published" class="form-check-input" />
+                <label class="form-check-label" for="published">
+                    Published
+                </label>
+            </div>
+        </div>
+        <div class="col-12">
+            <button type="button" class="btn btn-light" @onclick="BackToList">Cancel</button>
+            <button type="submit" class="btn btn-primary" disabled="@IsDisabled">Submit</button>
+        </div>
+    </EditForm>
+}
+
+@code {
+    private Job model = new() { Expires = DateTime.Now };
+    private List<Department>? departments;
+
+    private bool IsLoadingDepartments = true;
+    private bool IsDisabled;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await Http.GetFromJsonAsync<List<Department>>("api/Departments");
+        departments = departments?.OrderBy(d => d.Name).ToList();
+        IsLoadingDepartments = false;
+    }
+
+    private async Task HandleSubmit()
+    {
+        IsDisabled = true;
+        var response = await Http.PostAsJsonAsync<Job>("api/Jobs", model);
+        if (response.IsSuccessStatusCode)
+        {
+            BackToList();
+        }
+        IsDisabled = false;
+    }
+
+    private void BackToList()
+    {
+        NavigationManager.NavigateTo("/Jobs");
+    }
+}

@@ -1,0 +1,89 @@
+﻿.dashboard {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+::deep .dashboard-item {
+    min-width: 285px;
+    /*background: #f2f4f8;*/
+    border: 1px solid #ddd;
+    height: 500px;
+    border-radius: 0.25rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 20px;
+    margin-right: 1px;
+    overflow: hidden;
+    position: relative;
+}
+
+::deep .dashboard-item > h6 {
+    margin-bottom: 1rem;
+}
+
+::deep .dashboard-item a {
+    
+}
+
+::deep .dashboard-item a:hover:not(.btn){
+    color: #3845bf;
+}
+
+::deep .recent-applicants ul {
+    overflow-y: auto;
+    height: calc(100% - 55px);
+}
+
+::deep .due-positions .table-responsive {
+    height: calc(100% - 55px);
+}
+
+@media (max-width: 960.98px) {
+    .dashboard {
+        flex-direction: column;
+    }
+
+    ::deep .dashboard-item {
+        width: 100% !important;
+        height: auto;
+        margin-right: 5px !important;
+    }
+
+    ::deep .upcoming-interviews,
+    ::deep .due-positions,
+    ::deep .recent-applicants {
+        width: 100%;
+    }
+}
+
+@media (min-width: 961px) and (max-width: 1400.98px){
+    ::deep .upcoming-interviews {
+        width: 49%;
+    }
+
+    ::deep .due-positions,
+    ::deep .recent-applicants {
+        width: 49%;
+    }
+}
+
+@media (min-width: 1401px) {
+    ::deep .upcoming-interviews {
+        width: 45%;
+    }
+
+    ::deep .due-positions,
+    ::deep .recent-applicants {
+        width: 27%;
+    }
+}
+
+
+
+
+
+
+
+
+

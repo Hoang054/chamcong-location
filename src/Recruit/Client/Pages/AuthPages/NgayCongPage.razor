@@ -1,0 +1,562 @@
+﻿@layout MainLayout
+@page "/NgayCongPage"
+@using Blazored.LocalStorage;
+@using Recruit.Server.Models;
+@using Recruit.Server.Models.ModelView;
+@using System.Globalization;
+@inject ITinhCongService TinhCongService
+@inject IJSRuntime JS
+@inject ILocalStorageService LocalStorage
+@using System.Timers
+@using static System.Net.WebRequestMethods;
+
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h3>Chấm Công Nhân Viên</h3>
+</div>
+
+@{
+    var count = Days.Count;
+    int id = 0;
+}
+<div class="alert alert-danger @HideAlert" role="alert">
+    @AlertContent
+</div>
+<div>
+    <div class="d-flex align-items-center filters mb-3">
+        <div class="col-6">
+            <input type="date" @bind="SelectedDay" class="form-control w-50" data-date-format="dd-MM-yyyy" />
+            <div id="weekDisplay"></div>
+        </div>
+
+        <div class="col-3">
+            <select class="form-select form-control " @bind="SelectedPsnPrkId">
+                <option value="0">Tất cả nhân viên</option>
+                @foreach (var nhanvien in DsNhanVien)
+                {
+                    <option value="@nhanvien.PsnPrkID">@nhanvien.PsnName</option>
+                }
+            </select>
+        </div>
+        <div class="form-select-sm">
+            <select class="form-select form-control" @bind="SelectedOption">
+                <option value="0" selected disabled>Chấm công</option>
+                <option value="1">Theo Tuần</option>
+                <option value="2">Theo Tháng</option>
+            </select>
+        </div>
+        <div class="form-select-sm">
+            <select class="form-select form-control" >
+                <option value="0" selected disabled>Khoa</option>
+                <option value="1">Khoa Nhi</option>
+                <option value="2">Khoa Cấp Cứu</option>
+            </select>
+        </div>
+    </div>
+</div>
+<div class="table-responsive" style="margin-top: 15px;">
+    <table class="display table_ngaycong" id="myTable" style="width:100%">
+        <thead class="sticky-top">
+            <tr>
+                <th class="sticky-col first-col fixed-header table-color fixed-left" rowspan="2">
+                    STT
+                </th>
+                <th class="sticky-col second-col fixed-header table-color fixed-left" rowspan="2">
+                    <div class="search-result-container ">
+                        <input type="search" class="search-input" placeholder="Tìm Kiếm..." @bind="SearchTerm" @bind:event="oninput" />
+                    </div>
+                </th>
+                @foreach (var day in Days)
+                {
+                    <th class="table-color" colspan="2">
+                        @day.Value Ngày @day.Key/@day.Month
+                    </th>
+                }
+                <th class="table-color" colspan="2" rowspan="2">
+                    Chỉnh sửa
+                </th>
+            </tr>
+            <tr>
+                @foreach (var day in Days)
+                {
+                    <th class="table-color">Sáng</th>
+                    <th class="table-color">Chiều</th>
+                }
+            </tr>
+
+        </thead>
+        <tbody>
+            @foreach (NgayCong item in quanLyChamCong)
+            {
+                var MngChamCongPrk = MngChamCongPrkID(item.PsnPrkID);
+                id++;
+                <tr>
+                    <td class="sticky-col first-col">
+                        @id
+                    </td>
+                    <td class="sticky-col second-col">
+                        @item.PsnName
+                    </td>
+                    @for (var i = fromDay.Day; i <= toDay.Day; i++)
+                    {
+                        var NgayCC = i;
+                        <td class="mormal-col">
+                            <div class="row" style="flex-wrap: nowrap">
+                                <div style="display: contents;">
+
+                                    <select class="form-select" style="width:auto;"
+                                    @onchange="e => UpdateD(e, MngChamCongPrk.Result, item.PsnPrkID, NgayCC, 1)">
+                                        <option value="0">Chọn</option>
+                                        @foreach (var ChamCongType in ChamCongTypes)
+                                        {
+                                            if (item.ChamCongLines.Where(e => e.NgayCC == i && e.BuoiSang == ChamCongType.IdTypeChamCong).FirstOrDefault() != null)
+                                            {
+                                                <option value="@ChamCongType.IdTypeChamCong" selected>@ChamCongType.TenLoaiChamCong</option>
+
+                                            }
+                                            else
+                                            {
+                                                <option value="@ChamCongType.IdTypeChamCong">@ChamCongType.TenLoaiChamCong</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="mormal-col">
+                            <div class="row" style="flex-wrap: nowrap">
+                                <div style="display: contents;">
+                                    <select class="form-select" style="width:auto;"
+                                    @onchange="e => UpdateD(e, MngChamCongPrk.Result, item.PsnPrkID, NgayCC, 2)">
+                                        <option value="0">Chọn</option>
+                                        @foreach (var ChamCongType in ChamCongTypes)
+                                        {
+                                            if (item.ChamCongLines.Where(e => e.NgayCC == i && e.BuoiChieu == ChamCongType.IdTypeChamCong).FirstOrDefault() != null)
+                                            {
+                                                <option value="@ChamCongType.IdTypeChamCong" selected>@ChamCongType.TenLoaiChamCong</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@ChamCongType.IdTypeChamCong">@ChamCongType.TenLoaiChamCong</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </td>
+                    }
+                    <td>
+                        <button @onclick="e => DeleteD(MngChamCongPrk.Result)" class="btn btn-danger a-btn-btn-success-mormal-col">
+                            <i class="fa fa-trash-o"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+    <button @onclick="PreviousPage">Trang trước</button>
+    <button @onclick="NextPage">Trang sau</button>
+
+</div>
+@code {
+    public List<DayOfWeek> Days = new List<DayOfWeek>();
+    DateTime toDay;
+    DateTime fromDay;
+
+    private DateTime selectedDay { get; set; }
+    private DateTime selectedDate;
+    private int filterDateValue = 0;
+    private int filterJobIdValue = 0;
+    private SearchResult? result;
+    private ScheduleInterviewViewModel model = new();
+    private string HideAlert { get; set; } = "d-none";
+    private string HideSearch { get; set; } = "d-none";
+    private string HideChamCong { get; set; } = "d-none";
+    private string AlertContent { get; set; } = "";
+    private string longitude { get; set; } = "";
+    private string Latitude { get; set; } = "";
+
+    List<ChamCongType> ChamCongTypes = new List<ChamCongType>();
+    List<ChamCongType> ChamCongTypesPage = new List<ChamCongType>();
+    List<NgayCong> quanLyChamCong = new List<NgayCong>();
+    List<NgayCong> quanLyChamCongPage = new List<NgayCong>();
+    List<NgayCong> DsNhanVien = new List<NgayCong>();
+    List<NgayCong> DsNhanVienPage = new List<NgayCong>();
+
+    string MaNhanVien = "";
+    string roleName = "";
+    string email = "";
+    string fullname = "";
+    int MaNV = 0;
+
+    private int currentPage = 1;
+    private int itemsPerPage = 10; // số mục trên mỗi trang
+    private int totalpages;
+
+
+
+
+    DayToSearch dayToSearch = new DayToSearch();
+    protected override async void OnInitialized()
+    {
+        try
+        {
+            roleName = await LocalStorage.GetItemAsync<string>("RoleName");
+            var DayOfWeek = new List<DayOfWeek>();
+            selectedDay = DateTime.Now;
+            selectedDate = DateTime.ParseExact(selectedDay.ToString("dd-MM-yyyy"), "dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture);
+            SearchByWeek();
+            dayToSearch = new DayToSearch()
+                {
+                    FromDay = fromDay,
+                    ToDay = toDay
+                };
+            //if (roleName.ToString() == "Admin")
+            //{
+            HideSearch = "";
+            DsNhanVien = DsNhanVienPage = await TinhCongService.getsNhanVien();
+            ChamCongTypes = ChamCongTypesPage = await TinhCongService.getsLoaiChamCong();
+            quanLyChamCong = quanLyChamCongPage = await TinhCongService.layNgayCongToanBoNV(dayToSearch);
+
+            //}
+            //else if (roleName.ToString() == "Member")
+            //{
+            //    HideChamCong = "";
+            //    email = await LocalStorage.GetItemAsync<string>("Email");
+            //    var NV = await TinhCongService.layNhanvienbyEmail(email.ToString());
+            //    //MaNV = NV.PsnID;
+            //    //quanLyChamCong = await TinhCongService.layNgayCongToanBoNV(dayToSearch);
+            //}
+            // Khởi tạo danh sách đối tượng của bạn ở đây
+            UpdateDisplayedItems();
+            StateHasChanged();
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+    public class DayOfWeek
+    {
+        public int Key { get; set; }
+        public string? Value { get; set; }
+        public int Month { get; set; }
+    }
+
+    ///
+    private DateTime SelectedDay
+    {
+        get => selectedDay;
+        set
+        {
+            selectedDay = value;
+            SearchByWeek();
+            Search();
+        }
+    }
+
+    /// <summary>
+    /// Biến để theo dõi lựa chọn
+    /// </summary>
+    private int selectedOption { get; set; }
+    private int SelectedOption
+    {
+        get => selectedOption;
+        set
+        {
+            selectedOption = value;
+            if (value == 0)
+                SearchByWeek();
+            if (value == 1)
+                SearchByWeek();
+            else if (value == 2)
+                SearchByMonth();
+            Search();
+        }
+    }
+
+    /// <summary>
+    /// Ten nhan vien
+    /// </summary>
+    private int aSelectedPsnPrkId;
+    private int SelectedPsnPrkId
+    {
+        get => aSelectedPsnPrkId;
+        set
+        {
+            aSelectedPsnPrkId = value;
+            SearchSelectName();
+        }
+    }
+    /// <summary>
+    /// Chức năng tìm kiếm theo tên nhân viên trong bản chấm công
+    /// </summary>
+
+    //private int? trangThai;
+    //private int? TrangThai
+    //{
+    //    get => trangThai;
+    //    set
+    //    {
+    //        trangThai = value;
+    //    }
+    //}
+    private string? _searchTerm;
+    private string? SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            SearchByName();
+
+        }
+    }
+    /// <summary>
+    /// Tìm kiếm theo họ và tên nhân viên không phân biệt chữ hoa thường
+    /// </summary>
+    private List<NgayCong>? nhanViens = new List<NgayCong>();
+    private async void SearchByName()
+    {
+        quanLyChamCong = quanLyChamCongPage;
+        var searchTermLower = _searchTerm?.ToLower();
+
+        quanLyChamCong = quanLyChamCong
+            .Where(x => x.PsnName?.ToLower().Contains(searchTermLower) == true)
+            .OrderByDescending(x => x.PsnPrkID)
+            .ToList();
+
+        StateHasChanged();
+    }
+    /// <summary>
+    /// Chọn 1 nhân viên
+    /// </summary>
+    private async void SearchSelectName()
+    {
+        quanLyChamCong = quanLyChamCongPage;
+        if (SelectedPsnPrkId != 0)
+        {
+            quanLyChamCong = quanLyChamCong
+                .Where(x => x.PsnPrkID == SelectedPsnPrkId)
+                .ToList();
+
+        }
+
+        StateHasChanged();
+    }
+    /// <summary>
+    /// Hiển thị lịch chấm công theo tuần
+    /// </summary>
+    /// <returns></returns>
+    private async Task SearchByWeek()
+    {
+        var DayOfWeek = new List<DayOfWeek>();
+        selectedDate = DateTime.ParseExact(selectedDay.ToString("dd-MM-yyyy"), "dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture);
+        fromDay = selectedDate.AddDays(1 - (int)selectedDate.DayOfWeek); // Chuyển đến Thứ 2
+        toDay = selectedDate.AddDays(7 - (int)selectedDate.DayOfWeek); // Chuyển đến Chủ nhật
+        while (toDay.Month > fromDay.Month)
+        {
+            if (selectedDate.Month == fromDay.Month)
+                toDay = toDay.AddDays(-1);
+            else if (selectedDate.Month == toDay.Month)
+                fromDay = fromDay.AddDays(1);
+        }
+        HideAlert = "d-none";
+        var dayOfWeekArray = new string[] { "Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy" };
+        if (fromDay.Month == toDay.Month)
+        {
+            for (var i = fromDay.Day; i <= toDay.Day; i++)
+            {
+                var dt = new DateTime(selectedDate.Year, selectedDate.Month, i);
+                var dayOfWeekInVietnamese = dayOfWeekArray[(int)dt.DayOfWeek];
+                DayOfWeek.Add(new DayOfWeek() { Key = i, Value = dayOfWeekInVietnamese, Month = fromDay.Month });
+            }
+        }
+        else
+        {
+            var dayFrom = DateTime.DaysInMonth(fromDay.Year, fromDay.Month);
+            for (var i = fromDay.Day; i <= dayFrom; i++)
+            {
+                var dt = new DateTime(selectedDate.Year, selectedDate.Month, i);
+                var dayOfWeekInVietnamese = dayOfWeekArray[(int)dt.DayOfWeek];
+                DayOfWeek.Add(new DayOfWeek() { Key = i, Value = dayOfWeekInVietnamese, Month = fromDay.Month });
+            }
+
+            for (var i = 1; i <= toDay.Day; i++)
+            {
+                var dt = new DateTime(selectedDate.Year, selectedDate.Month, i);
+                var dayOfWeekInVietnamese = dayOfWeekArray[(int)dt.DayOfWeek];
+                DayOfWeek.Add(new DayOfWeek() { Key = i, Value = dayOfWeekInVietnamese, Month = fromDay.Month });
+            }
+        }
+        Days = DayOfWeek;
+    }
+    /// <summary>
+    /// Hiển thị lịch chấm công theo tháng
+    /// </summary>
+    /// <returns></returns>
+    private async Task SearchByMonth()
+    {
+        var DayOfWeek = new List<DayOfWeek>();
+        selectedDate = DateTime.ParseExact(selectedDay.ToString("MM-dd-yyyy"), "MM-dd-yyyy", System.Globalization.CultureInfo.InvariantCulture);
+        fromDay = new DateTime(selectedDate.Year, selectedDate.Month, 1); // Ngày đầu tháng
+        toDay = fromDay.AddMonths(1).AddDays(-1); // Ngày cuối tháng
+        HideAlert = "d-none";
+        var days = DateTime.DaysInMonth(selectedDate.Year, selectedDate.Month);
+        var dayOfWeekArray = new string[] { "Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy" };
+
+        for (var i = fromDay.Day; i <= toDay.Day; i++)
+        {
+            var dt = new DateTime(selectedDate.Year, selectedDate.Month, i);
+            var dayOfWeekInVietnamese = dayOfWeekArray[(int)dt.DayOfWeek];
+            DayOfWeek.Add(new DayOfWeek() { Key = i, Value = dayOfWeekInVietnamese, Month = fromDay.Month });
+        }
+
+        Days = DayOfWeek;
+    }
+    /// <summary>
+    /// cập nhật việc chấm công
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="day"></param>
+    /// <param name="MaNv"></param>
+    /// <param name="thang"></param>
+    /// <param name="nam"></param>
+    /// <param name="chamcong"></param>
+    /// <returns></returns>
+    private async Task UpdateD(ChangeEventArgs e, decimal? MngChamCongPrkID, Double PsnPrkID, int NgayCC, int buoi)
+    {
+        ChamCongHeader chamCongHeader = new ChamCongHeader()
+            {
+                MngChamCongPrkID = (double)(MngChamCongPrkID ?? 0),
+                PsnPrkID = PsnPrkID,
+                ThangCC = toDay.Month,
+                NamCC = toDay.Year,
+                NgayCC = NgayCC,
+                NgayCham = new DateTime(toDay.Year, toDay.Month, NgayCC),
+            };
+        if (buoi == 1)
+        {
+            chamCongHeader.BuoiSang = Int16.Parse(e.Value.ToString());
+        }
+        else
+        {
+            chamCongHeader.BuoiChieu = Int16.Parse(e.Value.ToString());
+
+        }
+        await TinhCongService.updateTinhNgayCong(chamCongHeader);
+    }
+    private async Task DeleteD(decimal? MngChamCongPrkID)
+    {
+        // Gọi phương thức service để cập nhật dữ liệu
+        await TinhCongService.DeleteNgayCong(MngChamCongPrkID, fromDay, toDay);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Nhân viên thực hiện chấm công
+    /// </summary>
+    /// <returns></returns>
+    //private async Task chamCong()
+    //{
+    //    var getLocation = await JS.InvokeAsync<GeoLocation>("getGeoLocation", null);
+    //    if (getLocation == null)
+    //    {
+    //        return;
+    //    }
+    //    if (getLocation.Latitude == "" || getLocation.Longitude == "")
+    //    {
+    //        await JS.InvokeVoidAsync("showAlert", null);
+    //        return;
+    //    }
+    //    var now = DateTime.Now;
+    //    var trangThai = "";
+    //    var ngayCongGet = await TinhCongService.getNgayCong(MaNV, now.Day.ToString(), now.Month.ToString(), now.Year.ToString());
+    //    if (now.Hour >= 8 & now.Hour <= 12)
+    //    {
+    //        trangThai = "1";
+    //    }
+    //    else if (ngayCongGet != null && now.Hour > 12 && now.Hour <= 18)
+    //    {
+    //        if (ngayCongGet.TrangThai == "1")
+    //        {
+    //            trangThai = "3";
+    //        }
+    //        else
+    //        {
+    //            trangThai = "2";
+    //        }
+    //    }
+    //    else if (ngayCongGet == null)
+    //    {
+    //        trangThai = "2";
+    //    }
+    //    NgayCong ngayCong = new NgayCong()
+    //        {
+    //            MaNV = MaNV,
+    //            Nam = now.Year.ToString(),
+    //            Thang = now.Month.ToString(),
+    //            Ngay = new DateTime(now.Year, now.Month, now.Day),
+    //            TrangThai = trangThai,
+    //            Latitude = getLocation.Latitude ?? "",
+    //            Longitude = getLocation.Longitude ?? ""
+    //        };
+    //    await TinhCongService.updateTinhNgayCong(ngayCong);
+    //}
+
+    protected async Task Search()
+    {
+        roleName = await LocalStorage.GetItemAsync<string>("RoleName");
+        var DayOfWeek = new List<DayOfWeek>();
+
+        dayToSearch = new DayToSearch()
+            {
+                FromDay = fromDay,
+                ToDay = toDay
+            };
+        HideSearch = "";
+        DsNhanVien = DsNhanVienPage;
+        ChamCongTypes = ChamCongTypesPage;
+        quanLyChamCong = quanLyChamCongPage;
+        StateHasChanged();
+    }
+    private async Task<decimal?> MngChamCongPrkID(int PsnPrkID)
+    {
+        return await TinhCongService.getMaChamCongHeader(PsnPrkID, toDay.Month, toDay.Year);
+    }
+    /// <summary>
+    /// Thực hiện phân trang
+    /// </summary>
+    private int UpdateDisplayedItems()
+    {
+        int startindex = (currentPage - 1) * itemsPerPage;
+        quanLyChamCong = quanLyChamCong.Skip(startindex).Take(itemsPerPage).ToList();
+        return (int)Math.Ceiling((double)quanLyChamCong.Count / itemsPerPage);
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            TotalPages();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage >= TotalPages())
+        {
+            currentPage++;
+            TotalPages();
+        }
+    }
+    private int TotalPages()
+    {
+        int startindex = (currentPage - 1) * itemsPerPage;
+        quanLyChamCong = quanLyChamCongPage;
+        quanLyChamCong = quanLyChamCong.Skip(startindex).Take(itemsPerPage).ToList();
+        return (int)Math.Ceiling((double)quanLyChamCong.Count / itemsPerPage);
+    }
+}

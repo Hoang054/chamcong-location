@@ -1,0 +1,75 @@
+﻿@if (IsShown)
+{
+    <div class="modal fade @ShowCss d-block" id="myModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" style="z-index: 1055">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">@Title</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="Cancel"></button>
+                </div>
+                <div class="modal-body">
+                    <span>@Text</span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal" @onclick="Cancel">Cancel</button>
+                    <button type="button" class="btn btn-danger btn-sm" @onclick="Ok">Delete</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade @ShowCss" @onclick="() => Close()"></div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnClose { get; set; }
+
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    // Used for fade animation
+    private bool IsShown = false;
+    private string? ShowCss = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsVisible && !IsShown)
+            await Show();
+        else if (!IsVisible && IsShown)
+            await Close();
+    }
+
+    private async Task Show()
+    {
+        IsShown = true;
+        await Task.Delay(100); // Let bootstrap apply fade animation
+        ShowCss = "show";
+    }
+
+    private async Task Close()
+    {
+        ShowCss = "";
+        await Task.Delay(300); // Let bootstrap apply fade animation
+        IsShown = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task Cancel()
+    {
+        await OnClose.InvokeAsync(false);
+    }
+
+    private async Task Ok()
+    {
+        await OnClose.InvokeAsync(true);
+    }
+}

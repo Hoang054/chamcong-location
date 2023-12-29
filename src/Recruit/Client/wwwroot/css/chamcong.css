@@ -1,0 +1,10 @@
+﻿/* Thêm CSS để tạo hiệu ứng hover màu lên hàng trong lịch */
+.calendar {
+    display: inline-block;
+    position: relative;
+}
+
+    .calendar .week-row:hover {
+        background-color: #e0e0e0; /* Màu nền khi hover */
+        cursor: pointer;
+    }

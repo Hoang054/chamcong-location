@@ -1,0 +1,406 @@
+﻿@using System.Net
+@inject HttpClient Http
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="@ShowDetailsPageCss" id="applicant-details">
+    @if (Applicant != null && IsVisible)
+    {
+        <span class="close-button" @onclick="HideDetails">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </span>
+        <div class="sections">
+            <div class="section section-main">
+                <div class="d-flex justify-content-between mb-2">
+                    <div class="d-flex">
+                        @if (!string.IsNullOrEmpty(Applicant.ProfilePhoto))
+                        {
+                            <img src="@Applicant.ProfilePhoto" class="profile-picture me-2" />
+                        }
+                        <div class="d-flex flex-column">
+                            <h4>@Applicant.FirstName @Applicant.LastName</h4>
+                            @if (!string.IsNullOrEmpty(Applicant.Headline))
+                            {
+                                <h6>@Applicant.Headline</h6>
+                            }
+                            <span class="text-success fw-400 fs-14">
+                                Applied for:
+                                <NavLink href="@($"Jobs/{Applicant.Job?.Id}")">
+                                    @Applicant.Job?.Title
+                                </NavLink>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start actions mt-1">
+                        <div class="d-flex align-items-center">
+                            <select class="form-select form-select-sm me-1" disabled="@(ShowLoading)" value="@Applicant.Stage?.Id" @onchange="MoveToStage" @onchange:stopPropagation="true">
+                                @foreach (var item in Stages ?? Enumerable.Empty<Stage>())
+                                {
+                                    <option value="@item.Id">@item.Name</option>
+                                }
+                            </select>
+                            <div class="dropdown me-1">
+                                <a class="btn btn-light btn-sm dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-secondary feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item text-danger cursor-pointer">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user-x"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>
+                                            Delete
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <button class="nav-link @(ActiveTabIndex == 1 ? "active" : "")" @onclick="@(() => ActiveTabIndex = 1)">Details</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link @(ActiveTabIndex == 2 ? "active" : "")" @onclick="@(() => ActiveTabIndex = 2)">Resume</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link @(ActiveTabIndex == 3 ? "active" : "")" @onclick="@(() => ActiveTabIndex = 3)">Contact</button>
+                </li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade @(ActiveTabIndex == 1 ? "show active": "")">
+                    <div class="section section-summary">
+                        <h6 class="header">Summary</h6>
+                        @if (string.IsNullOrEmpty(Applicant.Summary))
+                        {
+                            <span class="fs-14 text-secondary">Not Provided</span>
+                        }
+                        else
+                        {
+                            <p>@Applicant.Summary</p>
+                        }
+                    </div>
+                    <div class="section section-contact-details">
+                        <h6 class="header">Contact Details</h6>
+                        <div class="d-flex mb-1">
+                            <span class="left-side">Address:</span>
+                            @if (string.IsNullOrEmpty(Applicant.Address))
+                            {
+                                <span class="right-side text-secondary">Not Provided</span>
+                            }
+                            else
+                            {
+                                <span class="right-side">@Applicant.Address</span>
+                            }
+                        </div>
+                        <div class="d-flex mb-1">
+                            <span class="left-side">Email:</span>
+                            <a class="right-side" href="@($"mailto:{Applicant.Email?.ToLower()}")">
+                                @Applicant.Email?.ToLower()
+                            </a>
+                        </div>
+                        <div class="d-flex mb-1">
+                            <span class="left-side">Phone:</span>
+                            <span class="right-side">@Applicant.Phone</span>
+                        </div>
+                    </div>
+
+                    <div class="section section-education">
+                        <h6 class="header">Education</h6>
+                        @if (Applicant?.Education == null || Applicant.Education.Count == 0)
+                        {
+                            <span class="fs-14 text-secondary">Not Provided</span>
+                        }
+                        else
+                        {
+                            @foreach (var item in GetEducationInOrder(Applicant?.Education.ToList()))
+                            {
+                                <div class="d-flex mb-1">
+                                    <span class="left-side">
+                                        @item.StartDate?.Year - @item.EndDate?.Year
+                                    </span>
+                                    <span class="right-side">
+                                        @if (!string.IsNullOrEmpty(item.Degree))
+                                        {
+                                            <span>@item.Degree</span>
+                                        }
+                                        at <strong>@item.School</strong>
+                                    </span>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <div class="section section-experience">
+                        <h6 class="header">Experience</h6>
+                        @if (Applicant?.Experience == null || Applicant.Experience.Count == 0)
+                        {
+                            <span class="fs-14 text-secondary">Not Provided</span>
+                        }
+                        else
+                        {
+                            @foreach (var item in GetExperienceInOrder(Applicant?.Experience.ToList()))
+                            {
+                                <div class="d-flex mb-1">
+                                    <span class="left-side">
+                                        @item.StartDate?.Year - @(item.CurrentlyWorking ? "Now" : item.EndDate?.Year)
+                                    </span>
+                                    <span class="right-side">
+                                        @item.Title
+                                        @if (!string.IsNullOrEmpty(item.Company))
+                                        {
+                                            <span> at <strong>@item.Company</strong></span>
+                                        }
+                                    </span>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <div class="section section-skills">
+                        <h6 class="header">Skills</h6>
+                        <div>
+                            @if (string.IsNullOrEmpty(Applicant?.Skills))
+                            {
+                                <span class="fs-14 text-secondary">Not Provided</span>
+                            }
+                            else
+                            {
+                                string[] skills = Applicant.Skills.Split(",");
+                                List<string> matchedSkills = new List<string>();
+
+                                if (!string.IsNullOrEmpty(Applicant.Job?.RequiredSkills))
+                                {
+                                    matchedSkills = Applicant.Job.RequiredSkills.Split(",").ToList();
+                                }
+
+                                foreach (var skill in skills)
+                                {
+                                    if (matchedSkills != null && matchedSkills.Any(s => s.Trim().ToLower().Contains(skill.Trim().ToLower())))
+                                    {
+                                        <span class="badge rounded-pill skill me-1 match">@skill</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill skill me-1">@skill</span>
+                                    }
+                                }
+
+                                <div class="d-flex align-items-center mt-2 ms-1">
+                                    <span class="bg-success rounded-pill skill-indicator"></span>
+                                    <span class="skill-indicator-description">Match with job required skills</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade @(ActiveTabIndex == 2 ? "show active": "")">
+                    <div class="section section-resume mt-2">
+                        @if (string.IsNullOrEmpty(Applicant?.Resume?.FilePath))
+                        {
+                            <span class="fs-14 text-secondary">Not Provided</span>
+                        }
+                        else
+                        {
+                            if (ActiveTabIndex == 2)
+                            {
+                                <PdfViewer RemotePath="@($"api/Attachments/Resume/{Applicant?.Resume?.FilePath}")" />
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="tab-pane fade @(ActiveTabIndex == 3 ? "show active": "")">
+                    <div class="section section-contact mt-2">
+                        <div class="contact-header">
+                            @if (!ShowSendEmailForm)
+                            {
+                                <button class="btn btn-primary btn-sm" @onclick="@(() => ShowSendEmailForm = !ShowSendEmailForm)">Send email</button>
+                            }
+                            else
+                            {
+                                <EmailForm Applicant="Applicant"
+                                   OnValidSubmit="HandleSentEmail"
+                                   OnCancel="@(() => ShowSendEmailForm = false)" />
+                            }
+                        </div>
+                        <div class="contact-history">
+                            @if (IsLoadingEmails)
+                            {
+                                <p class="fs-14">Loading...</p>
+                            }
+                            else if (!IsLoadingEmails && Emails?.Count == 0)
+                            {
+                                <p class="fs-14">No emails have been sent yet.</p>
+                            }
+
+                            @foreach (var email in Emails?.OrderByDescending(e => e.SentDate).ToList() ?? Enumerable.Empty<EmailItemViewModel>())
+                            {
+                                <div class="email-item d-flex">
+                                    @if (!string.IsNullOrEmpty(email.Sender?.Avatar))
+                                    {
+                                        <img src="@email.Sender.Avatar" class="avatar" />
+                                    }
+                                    else
+                                    {
+                                        <span class="avatar avatar-green">@email.Sender?.FullName?.ToUpper()[0]</span>
+                                    }
+                                    <div class="d-flex flex-column flex-grow-1 ms-3">
+                                        <div class="d-flex flex-column">
+                                            <span class="fs-14 fw-500 lh-1">@email.Sender?.FullName</span>
+                                            <span class="text-secondary fs-14">Sent an email to candidate - <span class="fs-13">@email.SentDate?.ToString("dd/MM/yyyy hh:mm tt")</span></span>
+                                        </div>
+                                        <div class="email-body fs-14 mt-2">
+                                            @((MarkupString)email.Body!)
+                                        </div>
+                                        <a role="button" class="text-danger fs-14 btn-delete-email" @onclick="@(() => DeleteEmail(email))">Delete</a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Applicant? Applicant { get; set; }
+
+    private Applicant? PrevApplicant { get; set; }
+
+    private List<Stage>? Stages { get; set; }
+
+    private List<EmailItemViewModel>? Emails = new();
+
+    [Parameter]
+    public EventCallback<Applicant> OnStageUpdate { get; set; }
+
+    [Parameter]
+    public EventCallback<Applicant> OnClose { get; set; }
+
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    private bool showDetailsPage => Applicant != null && IsVisible == true ? true : false;
+    private string? ShowDetailsPageCss => showDetailsPage ? "applicant-details show" : "applicant-details";
+    private bool ShowLoading = false;
+
+    private int ActiveTabIndex { get; set; } = 1;
+    private bool ShowSendEmailForm = false;
+    private bool IsLoadingEmails = true;
+
+
+    private IJSObjectReference? module;
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ActiveTabIndex = 1;
+
+        // Prevent refetching applicant details for the same applicant
+        if (Applicant != null && Applicant.Id != PrevApplicant?.Id)
+        {
+            Applicant = await Http.GetFromJsonAsync<Applicant>($"api/Applicants/{Applicant.Id}");
+            Stages = Applicant?.Job?.Stages?.ToList();
+
+            await LoadEmails();
+        }
+
+        PrevApplicant = Applicant;
+    }
+
+    private async Task LoadEmails()
+    {
+        IsLoadingEmails = true;
+        StateHasChanged();
+        Emails = await Http.GetFromJsonAsync<List<EmailItemViewModel>>($"api/Emails/Applicant/{Applicant?.Id}");
+        IsLoadingEmails = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/scripts.js");
+            if (module != null)
+                await module.InvokeVoidAsync("AddOutsideDivClickListener", DotNetObjectReference.Create(this), nameof(HideDetails));
+        }
+    }
+
+    private IEnumerable<Education> GetEducationInOrder(List<Education>? educations)
+    {
+        var result = educations?.OrderByDescending(e => e.EndDate)
+            .ThenByDescending(e => e.StartDate)
+            .ToList();
+
+        return result ?? Enumerable.Empty<Education>();
+    }
+
+    private IEnumerable<Experience> GetExperienceInOrder(List<Experience>? experiences)
+    {
+        var result = experiences?.OrderByDescending(e => e.EndDate)
+            .ThenByDescending(e => e.StartDate)
+            .ToList();
+
+        return result ?? Enumerable.Empty<Experience>();
+    }
+
+    [JSInvokable]
+    public async Task HideDetails()
+    {
+        Applicant = null;
+        IsVisible = false;
+        ShowSendEmailForm = false;
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task MoveToStage(ChangeEventArgs args)
+    {
+        if (Applicant != null &&
+            int.TryParse(args.Value?.ToString(), out int result))
+        {
+            ShowLoading = true;
+            var response = await Http.PostAsJsonAsync<UpdateStatusViewModel>("api/Applicants/UpdateStatus", new UpdateStatusViewModel
+                {
+                    ApplicantId = Applicant.Id,
+                    StageId = result
+                });
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                Applicant.Stage = Stages?.FirstOrDefault(s => s.Id == result);
+                await OnStageUpdate.InvokeAsync(Applicant);
+            }
+            ShowLoading = false;
+        }
+    }
+
+    private void HandleSentEmail(EmailItemViewModel email)
+    {
+        ShowSendEmailForm = false;
+        Emails?.Add(email);
+    }
+
+    private async Task DeleteEmail(EmailItemViewModel email)
+    {
+        var response = await Http.DeleteAsync($"api/Emails/{email.Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            Emails?.Remove(email);
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (module != null)
+        {
+            await module.InvokeVoidAsync("RemoveOutsideDivClickListener");
+            await module.DisposeAsync();
+        }
+    }
+}

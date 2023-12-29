@@ -1,0 +1,546 @@
+﻿html, body {
+    font-family: -apple-system, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: #333z;
+}
+
+.container {
+    max-width: 1080px;
+}
+
+h1:focus {
+    outline: none;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+a:hover {
+    text-decoration: none;
+    color: #3845bf;
+}
+
+.auth-wrapper h1 {
+    font-size: 32px;
+    font-weight: 400;
+}
+
+.auth-wrapper .spinner-border-sm {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.fw-400 {
+    font-weight: 400;
+}
+
+.fw-500 {
+    font-weight: 500;
+}
+
+.fs-13 {
+    font-size: .75rem;
+}
+
+.fs-14 {
+    font-size: .875rem;
+}
+
+.fs-16 {
+    font-size: 1rem;
+}
+
+.max-width-960 {
+    max-width: 960px;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+}
+
+.overflow-y-auto {
+    overflow-y: auto;
+}
+
+.single-line {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-toggle::after {
+    display: none;
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.avatar-sm {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.avatar-lg {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    font-size: 21px;
+}
+
+.avatar-rounded {
+    border-radius: 4px;
+}
+
+.avatar-green {
+    background: #26b050;
+    color: white;
+    transition: all .15s ease;
+}
+
+.avatar-project {
+    background: #b1b195;
+    color: white;
+    transition: all .15s ease;
+}
+
+.avatar-green:hover {
+    background: #229e48;
+}
+
+.valid.modified:not([type=checkbox]) {
+    /*outline: 1px solid #26b050;*/
+}
+
+.invalid {
+    /*outline: 1px solid red;*/
+}
+
+.validation-message {
+    color: red;
+    font-size: 14px;
+}
+
+.validation-errors {
+    margin-top: 1rem;
+    margin-bottom: 0;
+}
+
+.modal .validation-errors {
+    margin-top: 0;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+.blazor-error-boundary {
+    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
+    padding: 1rem 1rem 1rem 3.7rem;
+    color: white;
+}
+
+.blazor-error-boundary::after {
+    content: "An error has occurred."
+}
+
+/* ============== Table ============== */
+
+.table-wrapper {
+    border: 1px solid #f2f4f8;
+    border-radius: 0.25rem;
+    min-height: 185px;
+}
+
+.table {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: rgba(0,0,0,0.7);
+}
+
+.table>:not(caption)>*>* {
+    padding: 20px 25px;
+}
+
+.table-sm>:not(caption)>*>* {
+    padding: 10px 15px;
+}
+
+th {
+    color: #84849F;
+    font-weight: 500;
+    border-bottom: 1px solid #f2f4f8 !important;
+}
+
+tbody tr:hover:not(.selected) {
+    background: #fafbff;
+}
+
+tr.selected {
+    background: #f0f2ff;
+}
+
+td {
+    border-bottom: none;
+    vertical-align: middle;
+}
+
+td a {
+    cursor: pointer;
+}
+
+td a:hover {
+    color: #3845bf;
+}
+
+th .form-check,
+td .form-check {
+    min-height: 0;
+    margin-bottom: 0;
+}
+
+th .form-check-input,
+td .form-check-input {
+    width: 1rem;
+    height: 1rem;
+    border-color: #cfcfcf;
+}
+
+.table-responsive .dropdown {
+    position: static;
+}
+
+.form-check-input.indeterminate {
+    background-color: #0d6efd;
+    border-color: #0d6efd !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
+
+}
+
+/*======================================*/
+
+
+/* ================ List =============== */
+ul.custom-list {
+
+}
+
+ul.custom-list li {
+    background: white;
+    padding: 10px 5px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.05s ease-in-out;
+}
+
+ul.custom-list li:hover {
+    background: #fafbfc;
+    cursor: pointer;
+}
+
+ul.custom-list li:last-child {
+    border-bottom: none;
+}
+
+ul.custom-list .actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+ul.custom-list .actions button {
+    background: none;
+    border: none;
+    color: #777;
+    padding: 3px 5px;
+}
+
+ul.custom-list .actions button:hover {
+    color: #333;
+}
+
+ul.custom-list .actions svg {
+    width: 18px;
+    height: 18px;
+}
+
+/*======================================*/
+
+.search-container {
+    position: relative;
+}
+
+.search-container input[type="search"] {
+    max-width: 220px;
+    padding-left: 25px;
+}
+
+.search-container svg {
+    position: absolute;
+    top: 6px;
+    left: 5px;
+}
+
+/*======================================*/
+
+
+/* ============== Custom Scrollbar ============== */
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #aaa;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/*===============================================*/
+
+
+.btn-rounded {
+    border-radius: 25px;
+}
+
+.btn-bulk-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    border: 1px solid rgb(206, 212, 218);
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.btn-bulk-actions svg {
+    margin-left: 5px;
+    margin-top: 1px;
+}
+
+
+/*===============================================*/
+
+.dropdown-menu {
+    border: 1px solid #e5e8ea;
+}
+
+.dropdown-item {
+    color: #555 !important;
+    margin-bottom: 2px;
+}
+
+.dropdown-item:hover {
+    background: #f2f4f6;
+}
+
+.dropdown-item.text-danger,
+.dropdown-item.text-danger svg {
+    color: #dc3545 !important;
+}
+
+.dropdown-item.text-danger:active,
+.dropdown-item.text-danger:active svg {
+    background: #dc3545;
+    color: white !important;
+}
+
+.dropdown-menu svg {
+    margin-right: 8px;
+}
+
+.dropdown-divider {
+    border-top: 1px solid #e5e8ea;
+}
+
+/*===============================================*/
+
+form label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #323E4A;
+}
+
+/* ==================== Modal =================== */
+.modal-header {
+    padding: 0.5rem 1rem 0.25rem 1rem;
+    border-bottom: none;
+}
+
+.modal-body {
+    padding: 0.5rem 1rem 0.75rem 1rem;
+}
+
+.modal-footer {
+    padding-top: 0.25rem;
+    border-top: none;
+}
+
+.modal-content .btn-close {
+    background-size: .75rem .75rem;
+}
+
+.modal-body .footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.modal-body .footer > * {
+    margin: 0.25rem;
+}
+
+.modal-body .footer > *:first-child {
+    margin-left: 0;
+}
+
+.modal-body .footer > *:last-child {
+    margin-right: 0;
+}
+
+/*===============================================*/
+
+.box-shadow {
+    box-shadow: 0 2px 5px rgb(52 63 75 / 10%);
+    border-radius: 0.25rem;
+}
+
+.p-25 {
+    padding: 25px;
+}
+
+
+/*===============================================*/
+
+.nav-tabs {
+    border-bottom: 1px solid #eee;
+
+}
+
+.nav-tabs .nav-item {
+    margin-right: 24px;
+}
+
+.nav-tabs .nav-item:last-child {
+    margin-right: 0;
+}
+
+.nav-tabs .nav-link {
+    padding-left: 0;
+    padding-right: 0;
+    font-size: 14px;
+    color: #333;
+    border: none;
+    margin-bottom: -1px;
+}
+
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-link:hover {
+    color: #3845bf;
+    border-bottom: 1px solid #3845bf;
+}
+
+/*===============================================*/
+
+.sub-header {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.35rem;
+    margin-bottom: 1rem;
+}
+
+/*===============================================*/
+
+.filters > select,
+.filters > .dropdown {
+    width: auto;
+    min-width: 130px;
+    max-width: 130px;
+    margin-right: 10px;
+    height: 32px;
+}
+
+.filters > *:last-child {
+    margin-right: 0;
+}
+
+.filters > .dropdown-bulk-actions {
+    min-width: auto;
+}
+
+.filters .highlight {
+    border: 2px solid #1f75f3;
+}
+
+.btn-clear-filters {
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    padding: 0;
+}
+
+@media (max-width: 640.98px) {
+    .filters {
+        flex-direction: column;
+    }
+
+    .filters > select,
+    .filters > .dropdown {
+        width: 100%;
+        max-width: 100%;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+
+    .filters .btn-bulk-actions {
+        width: 150px;
+    }
+
+    .btn-clear-filters {
+        align-self: flex-start;
+    }
+}
+
+@media (min-width: 641px) {
+
+}

@@ -1,0 +1,282 @@
+﻿@page "/Jobs/{Id}"
+@inject HttpClient Http
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@attribute [Authorize]
+
+@if (job == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="mb-0">@job.JobTitle</h3>
+            <div class="job-details">
+                @if (!string.IsNullOrEmpty(job.Location))
+                {
+                    <span class="text-secondary fs-14">@job.Location</span>
+                }
+                @if (!string.IsNullOrEmpty(job.Department))
+                {
+                    <span class="text-secondary fs-14">@job.Department</span>
+                }
+                @if (!string.IsNullOrEmpty(job.JobType))
+                {
+                    <span class="text-secondary fs-14">@job.JobType</span>
+                }
+            </div>
+        </div>
+        <div class="d-flex align-items-center">
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle me-2 @(job.Published ? "btn-published" : "btn-draft") @(IsLoading ? "disabled" : "")" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="d-flex align-items-center">
+                        <span class="me-1">@(job.Published ? "Published" : "Draft")</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end mt-1">
+                    <li><button class="dropdown-item" type="button" @onclick="@(() => Publish(true))">Publish</button></li>
+                    <li><button class="dropdown-item" type="button" @onclick="@(() => Publish(false))">Unpublish</button></li>
+                </ul>
+            </div>
+            <a class="btn btn-primary d-flex align-items-center btn-sm me-2" @onclick="OpenInviteDialog" @onclick:stopPropagation="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user-plus"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                <span class="ms-1 me-2">Invite</span>
+            </a>
+            <div class="dropdown">
+                <a class="btn btn-light btn-sm dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-secondary feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <NavLink href=@($"Jobs/Edit/{job?.JobId}") class="dropdown-item">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                            Edit
+                        </NavLink>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="stages-list mt-4">
+        @foreach (var stage in GetStages())
+        {
+            <div class="stage-item">
+                <div class="stage-item-header d-flex justify-content-between align-items-center fs-14 fw-500 mb-2">
+                    <span>@stage.Name</span>
+                    <span>@GetApplicantsCount(stage)</span>
+                </div>
+                <div class="stage-item-applicants sortable connectedSortable" id="@stage.Id">
+                    @foreach (var applicant in GetApplicants(stage))
+                    {
+                        <a class="d-block" @onclick="@(() => ShowDetails(applicant))" @onclick:stopPropagation="true" id="@applicant.Id" data-position="@applicant.Order">
+                            <div class="applicant-card d-flex flex-column mb-2 overflow-hidden">
+                                <div class="d-flex justify-content-start align-items-start">
+                                    @if (!string.IsNullOrEmpty(applicant.ProfilePhoto))
+                                    {
+                                        <img src="@applicant.ProfilePhoto" class="avatar mt-1 me-2" />
+                                    }
+                                    else
+                                    {
+                                        <span class="avatar avatar-green mt-1 me-2">@applicant.FirstName?.ToUpper()[0]</span>
+                                    }
+                                    <div class="d-flex flex-column overflow-hidden">
+                                        <span class="name fs-14 fw-500">@($"{applicant.FirstName} {applicant.LastName}")</span>
+                                        <span class="headline fs-14 fw-400 single-line">@applicant.Headline</span>
+                                        <span class="text-secondary fs-14 fw-400 single-line">@applicant.Address</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+}
+
+<ApplicantDetails @bind-IsVisible="ShowApplicantDetails" Applicant="CurrentApplicant"
+                  OnStageUpdate="HandleStageUpdate"
+                  OnClose="HideDetails" />
+
+<ModalTemplate @bind-IsVisible="ShowInviteDialog" Title="Invite Candidates">
+    <InviteDialog JobId="@job!.JobId"
+                  JobTitle="@job.JobTitle"
+                  OnCancel="OnInviteDialogClose" />
+</ModalTemplate>
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+    private JobDetailsViewModel? job;
+    private Applicant? CurrentApplicant { get; set; }
+
+    private bool ShowApplicantDetails = false;
+    private bool ShowInviteDialog = false;
+
+    private bool IsLoading = false;
+
+    private IJSObjectReference? module;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Id))
+        {
+            await LoadJobs();
+            await ApplySortable();
+        }
+    }
+
+    private async Task LoadJobs()
+    {
+        var response = await Http.GetAsync($"api/Jobs/Details/{Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            job = null;
+            StateHasChanged();
+            job = await response.Content.ReadFromJsonAsync<JobDetailsViewModel>();
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/board.js");
+        }
+    }
+
+    private async Task ApplySortable()
+    {
+        if (module != null)
+            await module.InvokeVoidAsync("ApplySortable", DotNetObjectReference.Create(this), nameof(HandleDrop));
+    }
+
+    private IEnumerable<Stage> GetStages()
+    {
+        var stages = job?.Stages?.OrderBy(x => x.Id);
+        return stages.EmptyIfNull();
+    }
+
+    private IEnumerable<Applicant> GetApplicants(Stage stage)
+    {
+        var applicants = job?.Applicants?
+        .Where(a => a.Stage?.Id == stage.Id)
+        .OrderBy(a => a.Order)
+        .ThenBy(a => a.ApplyDate)
+        .ToList();
+
+        return applicants.EmptyIfNull();
+    }
+
+    private int GetApplicantsCount(Stage stage)
+    {
+        var totalApplicants = job?.Applicants?.Where(a => a.Stage?.Id == stage.Id).Count();
+        return totalApplicants ?? 0;
+    }
+
+    private void HandleStageUpdate(Applicant applicant)
+    {
+        var applicantToUpdate = job?.Applicants.FirstOrDefault(a => a.Id == applicant.Id);
+        if (applicantToUpdate != null)
+        {
+            applicantToUpdate.Stage = applicant.Stage;
+        }
+    }
+
+    private void OpenInviteDialog()
+    {
+        CurrentApplicant = null;
+        ShowInviteDialog = true;
+        StateHasChanged();
+    }
+
+    private void OnInviteDialogClose(bool confirmed)
+    {
+        ShowInviteDialog = false;
+        StateHasChanged();
+    }
+
+    public void ShowDetails(Applicant? applicant)
+    {
+        ShowApplicantDetails = true;
+        CurrentApplicant = applicant;
+    }
+
+    public void HideDetails()
+    {
+        ShowApplicantDetails = false;
+        CurrentApplicant = null;
+        StateHasChanged();
+    }
+
+    private async Task Publish(bool value)
+    {
+        if (job != null && job.Published != value)
+        {
+            IsLoading = true;
+
+            var response = value == true ?
+                await Http.GetAsync($"api/Jobs/{job.JobId}/Publish") :
+                await Http.GetAsync($"api/Jobs/{job.JobId}/Unpublish");
+
+            if (response.IsSuccessStatusCode)
+                job.Published = value;
+
+            IsLoading = false;
+        }
+    }
+
+    [JSInvokable]
+    public async Task HandleDrop(int newStageId, List<OrderViewModel> items)
+    {
+        if (items.Count > 0)
+        {
+            // Update local applicants list before the request for smoother experience.
+            // If the request fails, the list will be refreshed.
+            UpdateApplicantsOrder(newStageId, items);
+
+            // Prepeare the model
+            var model = new UpdateOrderViewModel()
+                {
+                    StageId = newStageId,
+                    Items = items
+                };
+
+            // Send the update request
+            var response = await Http.PostAsJsonAsync<UpdateOrderViewModel>($"api/Applicants/UpdateStatusAndOrder", model);
+            if (!response.IsSuccessStatusCode)
+            {
+                await LoadJobs();
+                await ApplySortable();
+            }
+        }
+    }
+
+    private void UpdateApplicantsOrder(int newStageId, List<OrderViewModel> items)
+    {
+        var stage = job?.Stages.FirstOrDefault(s => s.Id == newStageId);
+        foreach (var item in items)
+        {
+            var applicant = job?.Applicants.FirstOrDefault(a => a.Id == item.ApplicantId);
+            if (applicant != null)
+            {
+                applicant.Stage = stage;
+                applicant.Order = item.Position;
+            }
+        }
+        StateHasChanged();
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (module != null)
+            await module.DisposeAsync();
+    }
+
+}
